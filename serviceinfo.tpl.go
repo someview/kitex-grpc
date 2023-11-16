@@ -28,7 +28,7 @@ func New{{.ServiceName}}ServiceInfo() *kitex.ServiceInfo {
 	handlerType := ({{.ServiceName}})(nil)    
 	methods := map[string]kitex.MethodInfo{
 		{{- range .Methods}}
-		"{{.Name}}": kitex.NewMethodInfo({{.HandlerName}}, &{{.RequestType}}, &{{.ResponseType}}, false),
+		"{{.Name}}": kitex.NewMethodInfo({{.HandlerName}}, &{{.RequestType}}, &&{{.ResponseType}}, false),
 		{{- end}}
 	}
 	extra := map[string]interface{}{
@@ -77,58 +77,16 @@ func {{.HandlerName}}(ctx context.Context, handler interface{}, arg, result inte
 			return err
 		}
 	case *{{.RequestType}}:
-		result, err := handler.({{$serviceName}}).PostMessage(ctx, s.Req)
-		// if err != nil {
-		// 	return err
-		// }
+		res, err := handler.({{$serviceName}}).PostMessage(ctx, s.Req)
+		if err != nil {
+		    return err
+		}
+		*(result.({{**ResponseType}})) = res
 	}
 	return nil
 }	
 		{{- end}}	
     {{- end}}
 
-
-
-
-
-
-
-{{- end}}
-
-
-func serviceInfo() *kitex.ServiceInfo {
-	return {{.ServiceName}}ServiceInfo
-}
-
-var {{.ServiceName}}ServiceInfo = NewServiceInfo()
-
-func NewServiceInfo() *kitex.ServiceInfo {
-	serviceName := "{{.ServiceName}}"
-	handlerType := ({{.PkgName}}.{{.ServiceName}})(nil)
-	methods := map[string]kitex.MethodInfo{
-		{{- range .Methods}}
-		"{{.Name}}": kitex.NewMethodInfo({{.HandlerName}}, new{{.Name}}Args, new{{.Name}}Result, {{.IsStreaming}}),
-		{{- end}}
-	}
-	extra := map[string]interface{}{
-		"PackageName":     "{{.PackageName}}",
-		"ServiceFilePath": ,
-	}
-	extra["streaming"] = true
-	svcInfo := &kitex.ServiceInfo{
-		ServiceName:     serviceName,
-		HandlerType:     handlerType,
-		Methods:         methods,
-		PayloadCodec:    kitex.Protobuf,
-		KiteXGenVersion: "v0.7.3",
-		Extra:           extra,
-	}
-	return svcInfo
-}
-
-{{range .Methods}}
-func {{.HandlerName}}(ctx context.Context, handler interface{}, arg, result interface{}) error {
-	// Implement handler logic here...
-}
 {{- end}}
 `

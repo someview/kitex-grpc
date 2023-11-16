@@ -65,7 +65,7 @@ func main() {
 		FileServiceInfo.ServiceList = append(FileServiceInfo.ServiceList, serviceInfo)
 	}
 
-	generateCode(FileServiceInfo)
+	generateClientCode(FileServiceInfo)
 }
 
 func extractPackageName(goPackage string) string {
@@ -77,12 +77,12 @@ func extractPackageName(goPackage string) string {
 }
 
 // ServiceInfo 和 MethodInfo 的定义 ...
-// generateCode 函数的定义 ...
+// generateClientCode 函数的定义 ...
 
 // 模板字符串
 
-// generateCode 使用模板生成代码
-func generateCode(FileServiceInfo FileServiceInfo) {
+// generateClientCode 使用模板生成代码
+func generateClientCode(FileServiceInfo FileServiceInfo) {
 	tmpl, err := template.New("client").Funcs(template.FuncMap{
 		"ToLower": strings.ToLower,
 	}).Parse(clientTemplate)
