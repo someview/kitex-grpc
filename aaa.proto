@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package TL.GoPrivate.Contract;
+//包名
+option go_package = "./;TL.GoPrivate.Contract";
+
+
+
+message Header {
+    // 消息体公共头部
+    string traceId = 1;  
+    string spanId = 2;
+    int64  timestamp = 3;  // 消息时间戳
+    sfixed64 sender = 4;   // 来源标识，manId或者handle
+    sfixed64 receiver = 5;     // 单个接收人
+    repeated sfixed64 receivers = 6;  // 多个接收人
+    string router = 7;    // 路由器，消息转发到路由中心,roomId
+    bool   issued = 8;    // 消息是否发布
+  }
+  
+//网关调用上行私聊消息
+message  PrivateRequest {
+    Header header = 1;
+    bytes  payload = 3;         //msg content, 网关不关心消息内容.
+}
+
+//私聊服务返回给网关的response
+message  PrivateResponse {
+    Header header = 4;     
+    bytes  payload = 2;            //消息的内容由客户端进行解析就好了.
+           
+}
+
+
+//私聊服务
+service GoPrivateService {
+    rpc OnPrivateMessage(stream PrivateRequest) returns (stream PrivateResponse) {}  //上行私聊消息
+    rpc PostMessage(PrivateRequest) returns (PrivateResponse) {}
+}
