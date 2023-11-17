@@ -6,6 +6,8 @@ import (
 	"strings"
 	"text/template"
 
+	"kitex-grpc/tpl"
+
 	"github.com/jhump/protoreflect/desc/protoparse"
 )
 
@@ -40,7 +42,7 @@ func main() {
 	}
 
 	fd := fileDescs[0]
-	FileServiceInfo := FileServiceInfo{
+	fileServiceInfo := FileServiceInfo{
 		PackageName: extractPackageName(fd.GetFileOptions().GetGoPackage()),
 	}
 
@@ -50,7 +52,7 @@ func main() {
 		}
 		for _, method := range svc.GetMethods() {
 			if method.IsClientStreaming() || method.IsServerStreaming() {
-				FileServiceInfo.HasStream = true
+				fileServiceInfo.HasStream = true
 				serviceInfo.ContainsStream = true
 			}
 			serviceInfo.Methods = append(serviceInfo.Methods, MethodInfo{
@@ -62,18 +64,23 @@ func main() {
 				ServerStreaming: method.IsServerStreaming(),
 			})
 		}
-		FileServiceInfo.ServiceList = append(FileServiceInfo.ServiceList, serviceInfo)
+		fileServiceInfo.ServiceList = append(fileServiceInfo.ServiceList, serviceInfo)
 	}
 
-	generateClientCode(FileServiceInfo)
+	generateServiceInfoCode(fileServiceInfo)
+	generateServerCode(fileServiceInfo)
+	generateClientCode(fileServiceInfo)
 }
 
 func extractPackageName(goPackage string) string {
 	parts := strings.Split(goPackage, ";")
+	var packageName string
 	if len(parts) > 1 {
-		return parts[1] // 如果存在分号，返回分号后面的部分
+		packageName = parts[1] // 如果存在分号，取分号后面的部分
+	} else {
+		packageName = goPackage // 否则返回整个字符串
 	}
-	return goPackage // 否则返回整个字符串
+	return strings.Replace(packageName, ".", "_", -1) // 替换所有的点为下划线
 }
 
 // ServiceInfo 和 MethodInfo 的定义 ...
@@ -82,21 +89,61 @@ func extractPackageName(goPackage string) string {
 // 模板字符串
 
 // generateClientCode 使用模板生成代码
-func generateClientCode(FileServiceInfo FileServiceInfo) {
+func generateClientCode(fileServiceInfo FileServiceInfo) {
 	tmpl, err := template.New("client").Funcs(template.FuncMap{
 		"ToLower": strings.ToLower,
-	}).Parse(clientTemplate)
+	}).Parse(tpl.ClientTpl)
 	if err != nil {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
 
-	file, err := os.Create("./private/generated_client.go")
+	file, err := os.Create("../pb/client.go")
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)
 	}
 	defer file.Close()
 
-	err = tmpl.Execute(file, FileServiceInfo)
+	err = tmpl.Execute(file, fileServiceInfo)
+	if err != nil {
+		log.Fatalf("Failed to execute template: %v", err)
+	}
+}
+
+func generateServiceInfoCode(fileServiceInfo FileServiceInfo) {
+	tmpl, err := template.New("service").Funcs(template.FuncMap{
+		"ToLower": strings.ToLower,
+	}).Parse(tpl.ServiceInfoTpl)
+	if err != nil {
+		log.Fatalf("Failed to parse template: %v", err)
+	}
+
+	file, err := os.Create("../pb/service.go")
+	if err != nil {
+		log.Fatalf("Failed to create file: %v", err)
+	}
+	defer file.Close()
+
+	err = tmpl.Execute(file, fileServiceInfo)
+	if err != nil {
+		log.Fatalf("Failed to execute template: %v", err)
+	}
+}
+
+func generateServerCode(fileServiceInfo FileServiceInfo) {
+	tmpl, err := template.New("server").Funcs(template.FuncMap{
+		"ToLower": strings.ToLower,
+	}).Parse(tpl.ServerTpl)
+	if err != nil {
+		log.Fatalf("Failed to parse template: %v", err)
+	}
+
+	file, err := os.Create("../pb/server.go")
+	if err != nil {
+		log.Fatalf("Failed to create file: %v", err)
+	}
+	defer file.Close()
+
+	err = tmpl.Execute(file, fileServiceInfo)
 	if err != nil {
 		log.Fatalf("Failed to execute template: %v", err)
 	}
