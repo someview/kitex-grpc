@@ -1,6 +1,7 @@
 package tpl
 
-const ServiceInfoTpl = `
+// KitexServiceInfoTpl todo KitexServiceInfoTpl is reserved for compitable with kitex protobuf code
+const KitexServiceInfoTpl = `
 
 package {{.PackageName}}
 {{ $outer := . }}

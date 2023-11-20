@@ -1,6 +1,6 @@
 package tpl
 
-const KitexServiceInfoTpl = `
+const ServiceInfoTpl = `
 
 package {{.PackageName}}
 {{ $outer := . }}
