@@ -97,7 +97,7 @@ func generateClientCode(fileServiceInfo FileServiceInfo) {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
 
-	file, err := os.Create("../pb/client.go")
+	file, err := os.Create("../kitex-grpc-demo/client.go")
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)
 	}
@@ -117,7 +117,7 @@ func generateServiceInfoCode(fileServiceInfo FileServiceInfo) {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
 
-	file, err := os.Create("../pb/service.go")
+	file, err := os.Create("../kitex-grpc-demo/service.go")
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)
 	}
@@ -137,7 +137,7 @@ func generateServerCode(fileServiceInfo FileServiceInfo) {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
 
-	file, err := os.Create("../pb/server.go")
+	file, err := os.Create("../kitex-grpc-demo/server.go")
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)
 	}

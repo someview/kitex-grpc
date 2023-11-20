@@ -34,6 +34,6 @@ message  PrivateResponse {
 
 //私聊服务
 service GoPrivateService {
-    rpc OnPrivateMessage(stream PrivateRequest) returns (stream PrivateResponse) {}  //上行私聊消息
+    //rpc OnPrivateMessage(stream PrivateRequest) returns (stream PrivateResponse) {}  //上行私聊消息
     rpc PostMessage(PrivateRequest) returns (PrivateResponse) {}
 }

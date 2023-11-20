@@ -1,6 +1,6 @@
 package tpl
 
-const KitexServiceInfoTpl = `
+const ServiceInfoTpl = `
 
 package {{.PackageName}}
 {{ $outer := . }}
@@ -107,23 +107,32 @@ func {{.HandlerName}}(ctx context.Context, handler interface{}, arg, result inte
 }
 		{{- else}}
 func {{.HandlerName}}(ctx context.Context, handler interface{}, arg, result interface{}) error {
-    s, ok := arg.(*streaming.Args)
-    if !ok {
-       return  errors.New("{{$serviceName}} service must use grpc protocol")
-    }
-    
-    st := s.Stream
-    req := new({{.RequestType}})
-    if err := st.RecvMsg(req); err != nil {
-        return err
-    }
-    resp, err := handler.({{$serviceName}}).PostMessage(ctx, req)
-    if err != nil {
-        return err
-    }
-    if err := st.SendMsg(resp); err != nil {
-        return err
-    }
+	switch s := arg.(type) {
+	case *streaming.Args:
+		st := s.Stream
+		req := new({{.RequestType}})
+		if err := st.RecvMsg(req); err != nil {
+			return err
+		}
+		resp, err := handler.({{$serviceName}}).PostMessage(ctx, req)
+		if err != nil {
+			return err
+		}
+		if err := st.SendMsg(resp); err != nil {
+			return err
+		}
+	case *{{.RequestType}}:
+		req := arg.(*{{.RequestType}})
+		resultPtr, ok := result.(*{{.ReturnType}})
+		if !ok {
+			panic("generator code not compatiable")
+		}
+		res, err := handler.({{$serviceName}}).PostMessage(ctx, req)
+		if err != nil {
+		    return err
+		}
+		*resultPtr = *res  // how to avoid alloc buffer
+	}
 	return nil
 }	
 	{{- end}}

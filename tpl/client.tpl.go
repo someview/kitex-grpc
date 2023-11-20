@@ -15,6 +15,9 @@ import (
 	transport "github.com/cloudwego/kitex/transport"
 )
 
+
+var _ = fmt.Println
+
 {{range .ServiceList}}
 {{- $serviceName :=.ServiceName }}
 
@@ -90,6 +93,7 @@ func (c *K{{$serviceName}}Client) {{.Name}}(ctx context.Context {{if not .Client
 
 func (c *K{{$serviceName}}Client) {{.Name}}(ctx context.Context, req *{{.RequestType}}, callOptions ...callopt.Option) (resp *{{.ReturnType}}, err error) {
 	ctx = client.NewCtxWithCallOptions(ctx, callOptions)
+	resp = &{{.ReturnType}}{}
 	err = c.Client.Call(ctx, "{{.Name}}", req, resp)
 	return
 }
@@ -102,6 +106,7 @@ func New{{$serviceName}}Client(destService string, opts ...client.Option) ({{$se
 	var options []client.Option
 	options = append(options, client.WithDestService(destService))
 	options = append(options, client.WithTransportProtocol(transport.GRPC))
+    options = append(options, opts...)
 	kc, err := client.NewClient(New{{$serviceName}}ServiceInfo(), options...)
 	if err != nil {
 		return nil, err
