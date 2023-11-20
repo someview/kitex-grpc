@@ -7,14 +7,11 @@ package {{.PackageName}}
 
 import (
 	"context"
-	"fmt"
-	client "github.com/cloudwego/kitex/client"
 	kitex "github.com/cloudwego/kitex/pkg/serviceinfo"
 	
 	{{- if .HasStream}}
 	streaming "github.com/cloudwego/kitex/pkg/streaming"
 	{{- end}}
-	proto "github.com/gogo/protobuf/proto"
 )
 
 {{range .ServiceList}}
@@ -52,7 +49,7 @@ var {{.ServiceName}}ServiceInfo = New{{.ServiceName}}ServiceInfo()
 
 func New{{.ServiceName}}ServiceInfo() *kitex.ServiceInfo {
 	serviceName := "{{.ServiceName}}"
-	handlerType := ({{.ServiceName}})(nil)    
+	handlerType := (*{{.ServiceName}})(nil)    
 	methods := map[string]kitex.MethodInfo{
 		{{- range .Methods}}
 		    {{- if or .ClientStreaming .ServerStreaming}}
