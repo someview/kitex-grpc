@@ -2,9 +2,9 @@
     "IncludePaths": [],
     "Protos": [
       {
-        "File": "aaa.proto",
+        "FilePath": "./example/aaa.proto",
         "ImportPaths": [],
-        "OutputPath": "../pb"
+        "OutputPath": "."
       }
     ]
   }

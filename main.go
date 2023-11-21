@@ -21,7 +21,7 @@ type Config struct {
 }
 
 type ProtoConfig struct {
-	FileName    string   `json:"FilePath"`    // proto文件名
+	FilePath    string   `json:"FilePath"`    // proto文件名
 	ImportPaths []string `json:"ImportPaths"` // 引入的msg的Module定义位置,允许引入多个module定义,例如github.com/someview/kitex-grpc
 	OutputPath  string   `json:"OutputPath"`  // 指定的proto的输出路径
 }
@@ -94,9 +94,9 @@ func generateProtoFileSet(conf *Config) {
 	incoludePaths := []string{"."}
 	incoludePaths = append(incoludePaths, conf.IncludePaths...)
 	parser := &protoparse.Parser{
-		ImportPaths: incoludePaths,
+		ImportPaths:      incoludePaths,
+		InferImportPaths: true,
 	}
-
 	for _, proto := range conf.Protos {
 		fileServiceInfo := generateProtoFileInfo(parser, proto)
 		generateServiceInfoCode(fileServiceInfo)
@@ -106,9 +106,9 @@ func generateProtoFileSet(conf *Config) {
 }
 
 func generateProtoFileInfo(parser *protoparse.Parser, conf ProtoConfig) FileServiceInfo {
-	fileDescs, err := parser.ParseFiles(conf.FileName)
+	fileDescs, err := parser.ParseFiles(conf.FilePath)
 	if err != nil || len(fileDescs) == 0 {
-		log.Fatalf("Failed to parse proto file: %v, err: %v", conf.FileName, err)
+		log.Fatalf("Failed to parse proto file: %v, err: %v", conf.FilePath, err)
 	}
 
 	fd := fileDescs[0]
@@ -151,13 +151,24 @@ func extractPackageName(goPackage string) string {
 	return strings.Replace(packageName, ".", "_", -1) // 替换所有的点为下划线
 }
 
+func extractFileName(goProto string) string {
+	parts := strings.Split(goProto, "/")
+	var protoName string
+	if len(parts) > 0 {
+		protoName = strings.TrimSuffix(parts[len(parts)-1], protoSuffix)
+	} else {
+		protoName = strings.TrimSuffix(goProto, protoSuffix)
+	}
+	return protoName
+}
+
 // generateClientCode 使用模板生成代码
 func generateClientCode(info FileServiceInfo) {
 	tmpl, err := template.New("client").Parse(tpl.ClientTpl)
 	if err != nil {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
-	filePath := fmt.Sprintf("%s/%s_client.go", info.OutputPath, strings.TrimSuffix(info.FileName, protoSuffix))
+	filePath := fmt.Sprintf("%s/%s_client.go", info.OutputPath, extractFileName(info.FilePath))
 	file, err := os.Create(filePath)
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)
@@ -175,7 +186,7 @@ func generateServiceInfoCode(info FileServiceInfo) {
 	if err != nil {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
-	filePath := fmt.Sprintf("%s/%s_serviceinfo.go", info.OutputPath, strings.TrimSuffix(info.FileName, protoSuffix))
+	filePath := fmt.Sprintf("%s/%s_serviceinfo.go", info.OutputPath, extractFileName(info.FilePath))
 	file, err := os.Create(filePath)
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)
@@ -193,7 +204,7 @@ func generateServerCode(info FileServiceInfo) {
 	if err != nil {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
-	filePath := fmt.Sprintf("%s/%s_server.go", info.OutputPath, strings.TrimSuffix(info.FileName, protoSuffix))
+	filePath := fmt.Sprintf("%s/%s_server.go", info.OutputPath, extractFileName(info.FilePath))
 	file, err := os.Create(filePath)
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)
