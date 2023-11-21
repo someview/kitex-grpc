@@ -1,0 +1,16 @@
+{
+    "includePaths": ["path1", "path2"],
+    "protos": [
+      {
+        "File": "file1.proto",
+        "ImportPaths": ["repo1", "repo2"],
+        "OutputPath": "path1"
+      },
+      {
+        "FilePath": "file2.proto",
+        "ImportPaths":  ["repo3"],
+        "OutputPath": "path2"
+      }
+    ]
+  }
+  

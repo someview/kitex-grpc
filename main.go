@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -10,6 +13,44 @@ import (
 
 	"github.com/jhump/protoreflect/desc/protoparse"
 )
+
+type Config struct {
+	IncludePaths []string      `json:"IncludePaths"`
+	Protos       []ProtoConfig `json:"Protos"`
+}
+
+type ProtoConfig struct {
+	FileName    string   `json:"FilePath"`    // proto文件名
+	ImportPaths []string `json:"ImportPaths"` // 引入的msg的Module定义位置,允许引入多个module定义,例如github.com/someview/kitex-grpc
+	OutputPath  string   `json:"OutputPath"`  // 指定的proto的输出路径
+}
+
+func parseConfig(configFile string, jsonConfig string) (*Config, error) {
+	if jsonConfig != "" {
+		var config Config
+		err := json.Unmarshal([]byte(jsonConfig), &config)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing JSON config: %v", err)
+		}
+		return &config, nil
+	}
+
+	if configFile != "" {
+		configData, err := os.ReadFile(configFile)
+		if err != nil {
+			return nil, fmt.Errorf("error reading config file: %v", err)
+		}
+
+		var config Config
+		err = json.Unmarshal(configData, &config)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing config file: %v", err)
+		}
+		return &config, nil
+	}
+
+	return nil, fmt.Errorf("no configuration provided")
+}
 
 type ServiceInfo struct {
 	ServiceName    string       // 服务名
@@ -30,20 +71,48 @@ type FileServiceInfo struct {
 	PackageName string
 	HasStream   bool // 文件是否包含stream
 	ServiceList []ServiceInfo
+	ProtoConfig
 }
 
 func main() {
-	parser := protoparse.Parser{
-		ImportPaths: []string{"."}, // 更改为您的 .proto 文件所在的目录
-	}
-	fileDescs, err := parser.ParseFiles("aaa.proto") // 更改为您的 .proto 文件名
+	// 解析命令行参数或者配置文件参数
+	configFile := flag.String("c", "", "Path to JSON config file")
+	jsonConfig := flag.String("json", "", "JSON string with configuration")
+	flag.Parse()
+	conf, err := parseConfig(*configFile, *jsonConfig)
 	if err != nil {
-		log.Fatalf("Failed to parse proto file: %v", err)
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	generateProtoFileSet(conf)
+}
+
+func generateProtoFileSet(conf *Config) {
+	// importPath为默认路径,用于include
+	incoludePaths := []string{"."}
+	incoludePaths = append(incoludePaths, conf.IncludePaths...)
+	parser := &protoparse.Parser{
+		ImportPaths: incoludePaths,
+	}
+
+	for _, proto := range conf.Protos {
+		fileServiceInfo := generateProtoFileInfo(parser, proto)
+		generateServiceInfoCode(fileServiceInfo)
+		generateServerCode(fileServiceInfo)
+		generateClientCode(fileServiceInfo)
+	}
+}
+
+func generateProtoFileInfo(parser *protoparse.Parser, conf ProtoConfig) FileServiceInfo {
+	fileDescs, err := parser.ParseFiles(conf.FileName)
+	if err != nil || len(fileDescs) == 0 {
+		log.Fatalf("Failed to parse proto file: %v, err: %v", conf.FileName, err)
 	}
 
 	fd := fileDescs[0]
 	fileServiceInfo := FileServiceInfo{
 		PackageName: extractPackageName(fd.GetFileOptions().GetGoPackage()),
+		ProtoConfig: conf,
 	}
 
 	for _, svc := range fd.GetServices() {
@@ -66,10 +135,7 @@ func main() {
 		}
 		fileServiceInfo.ServiceList = append(fileServiceInfo.ServiceList, serviceInfo)
 	}
-
-	generateServiceInfoCode(fileServiceInfo)
-	generateServerCode(fileServiceInfo)
-	generateClientCode(fileServiceInfo)
+	return fileServiceInfo
 }
 
 func extractPackageName(goPackage string) string {
@@ -83,67 +149,56 @@ func extractPackageName(goPackage string) string {
 	return strings.Replace(packageName, ".", "_", -1) // 替换所有的点为下划线
 }
 
-// ServiceInfo 和 MethodInfo 的定义 ...
-// generateClientCode 函数的定义 ...
-
-// 模板字符串
-
 // generateClientCode 使用模板生成代码
-func generateClientCode(fileServiceInfo FileServiceInfo) {
-	tmpl, err := template.New("client").Funcs(template.FuncMap{
-		"ToLower": strings.ToLower,
-	}).Parse(tpl.ClientTpl)
+func generateClientCode(info FileServiceInfo) {
+	tmpl, err := template.New("client").Parse(tpl.ClientTpl)
 	if err != nil {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
-
-	file, err := os.Create("../kitex-grpc-demo/client.go")
+	filePath := fmt.Sprintf("%s/%s_client.go", info.OutputPath, info.FileName)
+	file, err := os.Create(filePath)
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)
 	}
 	defer file.Close()
 
-	err = tmpl.Execute(file, fileServiceInfo)
+	err = tmpl.Execute(file, info)
 	if err != nil {
 		log.Fatalf("Failed to execute template: %v", err)
 	}
 }
 
-func generateServiceInfoCode(fileServiceInfo FileServiceInfo) {
-	tmpl, err := template.New("service").Funcs(template.FuncMap{
-		"ToLower": strings.ToLower,
-	}).Parse(tpl.ServiceInfoTpl)
+func generateServiceInfoCode(info FileServiceInfo) {
+	tmpl, err := template.New("service").Parse(tpl.ServiceInfoTpl)
 	if err != nil {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
-
-	file, err := os.Create("../kitex-grpc-demo/service.go")
+	filePath := fmt.Sprintf("%s/%s_serviceinfo.go", info.OutputPath, info.FileName)
+	file, err := os.Create(filePath)
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)
 	}
 	defer file.Close()
 
-	err = tmpl.Execute(file, fileServiceInfo)
+	err = tmpl.Execute(file, info)
 	if err != nil {
 		log.Fatalf("Failed to execute template: %v", err)
 	}
 }
 
-func generateServerCode(fileServiceInfo FileServiceInfo) {
-	tmpl, err := template.New("server").Funcs(template.FuncMap{
-		"ToLower": strings.ToLower,
-	}).Parse(tpl.ServerTpl)
+func generateServerCode(info FileServiceInfo) {
+	tmpl, err := template.New("server").Parse(tpl.ServerTpl)
 	if err != nil {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
-
-	file, err := os.Create("../kitex-grpc-demo/server.go")
+	filePath := fmt.Sprintf("%s/%s_server.go", info.OutputPath, info.FileName)
+	file, err := os.Create(filePath)
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)
 	}
 	defer file.Close()
 
-	err = tmpl.Execute(file, fileServiceInfo)
+	err = tmpl.Execute(file, info)
 	if err != nil {
 		log.Fatalf("Failed to execute template: %v", err)
 	}
