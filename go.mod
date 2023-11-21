@@ -1,4 +1,4 @@
-module kitex-grpc
+module github.com/somview/kitex-grpc
 
 go 1.21.1
 

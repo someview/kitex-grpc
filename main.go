@@ -9,10 +9,11 @@ import (
 	"strings"
 	"text/template"
 
-	"kitex-grpc/tpl"
-
 	"github.com/jhump/protoreflect/desc/protoparse"
+	"github.com/somview/kitex-grpc/tpl"
 )
+
+const protoSuffix = ".proto"
 
 type Config struct {
 	IncludePaths []string      `json:"IncludePaths"`
@@ -76,8 +77,9 @@ type FileServiceInfo struct {
 
 func main() {
 	// 解析命令行参数或者配置文件参数
-	configFile := flag.String("c", "", "Path to JSON config file")
-	jsonConfig := flag.String("json", "", "JSON string with configuration")
+	configFile := flag.String("c", "", "Path to JSON config file,")
+	help := `JSON string with configuration,{"IncludePaths":["path1","path2"],"Protos":[{"FilePath":"file1.proto","ImportPaths":["import1","import2"],"OutputPath":"output1"}]}"`
+	jsonConfig := flag.String("json", "", help)
 	flag.Parse()
 	conf, err := parseConfig(*configFile, *jsonConfig)
 	if err != nil {
@@ -155,7 +157,7 @@ func generateClientCode(info FileServiceInfo) {
 	if err != nil {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
-	filePath := fmt.Sprintf("%s/%s_client.go", info.OutputPath, info.FileName)
+	filePath := fmt.Sprintf("%s/%s_client.go", info.OutputPath, strings.TrimSuffix(info.FileName, protoSuffix))
 	file, err := os.Create(filePath)
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)
@@ -173,7 +175,7 @@ func generateServiceInfoCode(info FileServiceInfo) {
 	if err != nil {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
-	filePath := fmt.Sprintf("%s/%s_serviceinfo.go", info.OutputPath, info.FileName)
+	filePath := fmt.Sprintf("%s/%s_serviceinfo.go", info.OutputPath, strings.TrimSuffix(info.FileName, protoSuffix))
 	file, err := os.Create(filePath)
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)
@@ -191,7 +193,7 @@ func generateServerCode(info FileServiceInfo) {
 	if err != nil {
 		log.Fatalf("Failed to parse template: %v", err)
 	}
-	filePath := fmt.Sprintf("%s/%s_server.go", info.OutputPath, info.FileName)
+	filePath := fmt.Sprintf("%s/%s_server.go", info.OutputPath, strings.TrimSuffix(info.FileName, protoSuffix))
 	file, err := os.Create(filePath)
 	if err != nil {
 		log.Fatalf("Failed to create file: %v", err)

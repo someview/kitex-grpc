@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package GoPrivate.Contract;
+//包名
+option go_package = "./;GoPrivate.Contract";
+
+
+message  PrivateRequest {
+   
+}
+
+message  PrivateResponse {
+ 
+           
+}
+
+
+//私聊服务
+service GoPrivateService {
+    //rpc OnPrivateMessage(stream PrivateRequest) returns (stream PrivateResponse) {}  //上行私聊消息
+    rpc PostMessage(PrivateRequest) returns (PrivateResponse) {}
+}
