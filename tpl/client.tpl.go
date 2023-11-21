@@ -11,7 +11,7 @@ import (
 	streaming "github.com/cloudwego/kitex/pkg/streaming"
 	{{- end}}
 	{{- range .ImportPaths}}
-	    {{.}}
+	   . {{.}}
 	{{- end}}
 	client "github.com/cloudwego/kitex/client"
 	callopt "github.com/cloudwego/kitex/client/callopt"

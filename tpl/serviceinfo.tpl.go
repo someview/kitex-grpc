@@ -9,7 +9,7 @@ import (
 	"context"
 	kitex "github.com/cloudwego/kitex/pkg/serviceinfo"
 	{{- range .ImportPaths}}
-	{{.}}
+	. {{.}}
     {{- end}}
 	streaming "github.com/cloudwego/kitex/pkg/streaming"
     "errors"
