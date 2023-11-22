@@ -99,9 +99,11 @@ func generateProtoFileSet(conf *Config) {
 	}
 	for _, proto := range conf.Protos {
 		fileServiceInfo := generateProtoFileInfo(parser, proto)
-		generateServiceInfoCode(fileServiceInfo)
-		generateServerCode(fileServiceInfo)
-		generateClientCode(fileServiceInfo)
+		if len(fileServiceInfo.ServiceList) > 0 {
+			generateServiceInfoCode(fileServiceInfo)
+			generateServerCode(fileServiceInfo)
+			generateClientCode(fileServiceInfo)
+		}
 	}
 }
 
