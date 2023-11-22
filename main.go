@@ -91,7 +91,7 @@ func main() {
 
 func generateProtoFileSet(conf *Config) {
 	// importPath为默认路径,用于include
-	incoludePaths := []string{"."}
+	incoludePaths := []string{"/", "."}
 	incoludePaths = append(incoludePaths, conf.IncludePaths...)
 	parser := &protoparse.Parser{
 		ImportPaths:      incoludePaths,
@@ -108,6 +108,7 @@ func generateProtoFileSet(conf *Config) {
 }
 
 func generateProtoFileInfo(parser *protoparse.Parser, conf ProtoConfig) FileServiceInfo {
+	fmt.Println("conf.filePath:", conf.FilePath)
 	fileDescs, err := parser.ParseFiles(conf.FilePath)
 	if err != nil || len(fileDescs) == 0 {
 		log.Fatalf("Failed to parse proto file: %v, err: %v", conf.FilePath, err)

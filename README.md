@@ -2,7 +2,7 @@
 kitex grpc plugin, seperate message definition from serviceinfo, define template easily.
 you can define importPaths for the proto file that contains multiservice.
 
-## example
+## innertest
 ```
 go run main.go -c ./example/config.json
 ```
@@ -18,6 +18,7 @@ kitex-grpc -json 'jsonstr', eg:
 - unix-like shell kitex-grpc  -json='{"Protos":[{"FilePath":"aaa.proto","OutputPath":"../pb"}]}'
 - windows powershell  kitex-grpc -json='{\"Protos\":[{\"FilePath\":\"aaa.proto\",\"OutputPath\":\"../pb\"}]}'
 ```
+you must let you proto filepath can infer from includePaths, the inner includePaths is "/" and "."
 
 ## examples
 use with gogoproto
