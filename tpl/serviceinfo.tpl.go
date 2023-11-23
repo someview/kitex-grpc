@@ -120,7 +120,7 @@ func {{.HandlerName}}(ctx context.Context, handler interface{}, arg, result inte
     if err := st.RecvMsg(req); err != nil {
         return err
     }
-    resp, err := handler.({{$serviceName}}).PostMessage(ctx, req)
+    resp, err := handler.({{$serviceName}}).{{.Name}}(ctx, req)
     if err != nil {
         return err
     }
